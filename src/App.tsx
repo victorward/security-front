@@ -1,15 +1,15 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react';
 import './App.css';
-import {Layout, Menu, Breadcrumb, Row, Col} from 'antd';
-import FormPage from "./form/FormPage";
+import { Layout, Menu } from 'antd';
+import Stepper from './form/Stepper';
 
-const {Header, Content, Footer} = Layout;
+const { Header, Content, Footer } = Layout;
 
 class App extends Component {
     render() {
         return (
             <Layout className="layout">
-                <Header>
+                <Header className="header">
                     <div className="logo">
                         <span>Security form</span>
                     </div>
@@ -24,21 +24,13 @@ class App extends Component {
                     </Menu>
                 </Header>
                 <Content className="content-container">
-                    <Row className="nav-breadcrumb" align="middle" type="flex">
-                        <Col>
-                            <Breadcrumb>
-                                <Breadcrumb.Item>Submitting</Breadcrumb.Item>
-                            </Breadcrumb>
-                        </Col>
-                    </Row>
-                    <Row className="content">
-                        <Col>
-                            <FormPage/>
-                        </Col>
-                    </Row>
+                    <Stepper/>
                 </Content>
                 <Footer className="footer">
-                    Security form for Security of Information's Systems ©2018 Created by Yuriy Babyak & Marcin Szalek
+                    <p>
+                        Security form for Security of Information's Systems ©2018 Created by Yuriy Babyak & Marcin
+                        Szalek
+                    </p>
                 </Footer>
             </Layout>
         );
