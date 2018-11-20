@@ -1,38 +1,29 @@
-import { Col, Form, Input, Row } from 'antd';
+import { Col, Form, Input, Row, Select } from 'antd';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import React, { Component } from 'react';
-import { isEmpty } from 'lodash';
+import { isEmpty, map } from 'lodash';
+import { numbersRegex, validatePeselNumbers, validatePhoneNumber } from '../helper/helper';
+import * as contriesPhonePrefixes from '../helper/countries-phone-prefixes.json';
 
 const FormItem = Form.Item;
+const Option = Select.Option;
 
 interface IFirstStepForm {
 }
 
+interface IFormItem {
+    value: number | undefined,
+    validateStatus?: any,
+    errorMsg?: string
+}
+
 interface IFirstStepFormState {
     pesel: any;
-    // pesel: {
-    //     value: number | undefined,
-    //     validateStatus?: any,
-    //     errorMsg?: string
-    // }
+    phone: any;
 }
 
 type FirstStepFormPageProps = IFirstStepForm & FormComponentProps;
 
-const validatePeselNumbers = (pesel: number): boolean => {
-    const dig = ('' + pesel).split('');
-    let control = (parseInt(dig[0], 10) + 3 * parseInt(dig[1], 10) + 7 * parseInt(dig[2], 10) + 9
-        * parseInt(dig[3], 10) + 1 * parseInt(dig[4], 10) + 3 * parseInt(dig[5], 10) + 7
-        * parseInt(dig[6], 10) + 9 * parseInt(dig[7], 10) + 1 * parseInt(dig[8], 10) + 3
-        * parseInt(dig[9], 10)) % 10;
-
-    if (control === 0)
-        control = 10;
-
-    control = 10 - control;
-
-    return parseInt(dig[10], 10) === control;
-};
 
 class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormState> {
     constructor(props: FirstStepFormPageProps) {
@@ -40,6 +31,10 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
         this.state = {
             pesel: {
                 value: undefined
+            },
+            phone: {
+                value: undefined,
+                prefix: 'PL'
             }
         };
     }
@@ -54,13 +49,12 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
     };
 
     onPeselChange = (event: any) => {
-        const reg = /^-?(0|[1-9][0-9]*)(\.[0-9]*)?$/;
         const { value } = event.target;
 
         if (isEmpty(value)) {
             this.setState({
                 pesel: {
-                    errorMsg: 'PESEL is requiered',
+                    errorMsg: 'PESEL is required',
                     validateStatus: 'error',
                     value
                 }
@@ -68,7 +62,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
             return;
         }
 
-        if (reg.test(value) && ('' + value).length < 11) {
+        if (numbersRegex.test(value) && ('' + value).length < 11) {
             this.setState({
                 pesel: {
                     errorMsg: 'PESEL is too short',
@@ -79,7 +73,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
             return;
         }
 
-        if (reg.test(value))
+        if (numbersRegex.test(value))
             this.setState({
                 pesel: {
                     ...this.validatePesel(value),
@@ -102,9 +96,71 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
         };
     };
 
+    onPhoneChange = (event: any) => {
+        const { value } = event.target;
+
+        if (isEmpty(value)) {
+            this.setState({
+                phone: {
+                    ...this.state.phone,
+                    errorMsg: 'Phone number is required',
+                    validateStatus: 'error',
+                    value
+                }
+            });
+            return;
+        }
+
+        if (numbersRegex.test(value))
+            this.setState({
+                phone: {
+                    ...this.state.phone,
+                    ...this.validatePhone(value, this.state.phone.prefix),
+                    value
+                }
+            });
+    };
+
+    validatePhone = (value: number, prefix: string) => {
+        return validatePhoneNumber(value, prefix);
+    };
+
+    phonePrefixChange = (value: any) => {
+        this.setState({
+            phone: {
+                ...this.state.phone,
+                ...this.validatePhone(this.state.phone.value, value),
+                prefix: value
+            }
+        });
+    };
+
     render() {
         const { getFieldDecorator } = this.props.form;
-        const { pesel } = this.state;
+        const { pesel, phone } = this.state;
+
+        const phonePrefixSelector = getFieldDecorator('phone-prefix', {
+            initialValue: 'PL'
+        })(
+            <Select
+                style={{ minWidth: 150 }}
+                showSearch
+                placeholder="Country prefix"
+                optionFilterProp="children"
+                onChange={this.phonePrefixChange}
+            >
+                {
+                    map(contriesPhonePrefixes.countries, (value) => {
+                        const name = `${value.name} (+${value.code})`;
+
+                        return (<Option key={value.iso2} value={`${value.iso2}`} title={name}>
+                            {name}
+                        </Option>);
+                    })
+                }
+            </Select>
+        );
+
         return (
             <Row>
                 <Col span={14} offset={5}>
@@ -128,7 +184,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                         </FormItem>
 
                         <FormItem
-                            label="Your second name"
+                            label="and your second name"
                             hasFeedback
                         >
                             {
@@ -146,6 +202,43 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                         </FormItem>
 
                         <FormItem
+                            label="Now please provide your email address"
+                            hasFeedback
+                        >
+                            {
+                                getFieldDecorator('email', {
+                                    rules: [
+                                        {
+                                            required: true,
+                                            message: 'Please input your email address'
+                                        },
+                                        {
+                                            type: 'email',
+                                            message: 'Is not valid email'
+                                        }
+                                    ]
+                                })(
+                                    <Input placeholder='email@gmail.com'/>
+                                )
+                            }
+                        </FormItem>
+
+                        <FormItem
+                            label="and phone number for eventual communication"
+                            hasFeedback
+                            required
+                            validateStatus={phone.validateStatus}
+                            help={phone.errorMsg}
+                        >
+                            <Input
+                                addonBefore={phonePrefixSelector}
+                                placeholder='Phone number'
+                                value={phone.value}
+                                onChange={this.onPhoneChange}
+                            />
+                        </FormItem>
+
+                        <FormItem
                             label="Your PESEL"
                             hasFeedback
                             validateStatus={pesel.validateStatus}
@@ -154,6 +247,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                             <Input
                                 placeholder='PESEL'
                                 maxLength={11}
+                                style={{ minWidth: 100 }}
                                 value={pesel.value}
                                 onChange={this.onPeselChange}
                             />
