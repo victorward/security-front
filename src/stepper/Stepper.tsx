@@ -1,20 +1,27 @@
 import React, { Component } from 'react';
 import { Steps, Button, message, Row, Col } from 'antd';
 import './Stepper.css';
-import FirstStepForm from './FirstStepForm';
+import FirstStepForm from '../form/first-step/FirstStepForm';
+import SecondStepForm from '../form/second-step/SecondStepForm';
 
 const Step = Steps.Step;
 
-const steps = [{
-    title: 'Base information',
-    content: <FirstStepForm/>
-}, {
-    title: 'Second',
-    content: 'Second-content'
-}, {
-    title: 'Last',
-    content: 'Last-content'
-}];
+const steps = [
+    {
+        title: 'Base information',
+        content: <FirstStepForm/>
+    }, {
+        title: 'Verification data',
+        content: <SecondStepForm/>
+    }, {
+        title: 'Write statement',
+        content: 'Write statement'
+    },
+    {
+        title: 'Finishing',
+        content: 'Finishing'
+    }
+];
 
 interface IStepperProps {
 }

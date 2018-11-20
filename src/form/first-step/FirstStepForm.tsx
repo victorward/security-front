@@ -2,8 +2,8 @@ import { Col, Form, Input, Row, Select } from 'antd';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import React, { Component } from 'react';
 import { isEmpty, map } from 'lodash';
-import { numbersRegex, validatePeselNumbers, validatePhoneNumber } from '../helper/helper';
-import * as contriesPhonePrefixes from '../helper/countries-phone-prefixes.json';
+import { numbersRegex, validatePhoneNumber } from '../../helper/helper';
+import * as countriesPhonePrefixes from '../../helper/countries-phone-prefixes.json';
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -18,20 +18,15 @@ interface IFormItem {
 }
 
 interface IFirstStepFormState {
-    pesel: any;
     phone: any;
 }
 
 type FirstStepFormPageProps = IFirstStepForm & FormComponentProps;
 
-
 class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormState> {
     constructor(props: FirstStepFormPageProps) {
         super(props);
         this.state = {
-            pesel: {
-                value: undefined
-            },
             phone: {
                 value: undefined,
                 prefix: 'PL'
@@ -46,54 +41,6 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                 console.log('Received values of form: ', values);
             }
         });
-    };
-
-    onPeselChange = (event: any) => {
-        const { value } = event.target;
-
-        if (isEmpty(value)) {
-            this.setState({
-                pesel: {
-                    errorMsg: 'PESEL is required',
-                    validateStatus: 'error',
-                    value
-                }
-            });
-            return;
-        }
-
-        if (numbersRegex.test(value) && ('' + value).length < 11) {
-            this.setState({
-                pesel: {
-                    errorMsg: 'PESEL is too short',
-                    validateStatus: 'error',
-                    value
-                }
-            });
-            return;
-        }
-
-        if (numbersRegex.test(value))
-            this.setState({
-                pesel: {
-                    ...this.validatePesel(value),
-                    value
-                }
-            });
-    };
-
-    // https://gist.github.com/marekbryling/8889065
-    validatePesel = (value: any) => {
-        if (validatePeselNumbers(value))
-            return {
-                validateStatus: 'success',
-                errorMsg: null
-            };
-
-        return {
-            validateStatus: 'error',
-            errorMsg: 'Please provide valid PESEL'
-        };
     };
 
     onPhoneChange = (event: any) => {
@@ -137,7 +84,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
 
     render() {
         const { getFieldDecorator } = this.props.form;
-        const { pesel, phone } = this.state;
+        const { phone } = this.state;
 
         const phonePrefixSelector = getFieldDecorator('phone-prefix', {
             initialValue: 'PL'
@@ -150,7 +97,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                 onChange={this.phonePrefixChange}
             >
                 {
-                    map(contriesPhonePrefixes.countries, (value) => {
+                    map(countriesPhonePrefixes.countries, (value) => {
                         const name = `${value.name} (+${value.code})`;
 
                         return (<Option key={value.iso2} value={`${value.iso2}`} title={name}>
@@ -235,21 +182,6 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                                 placeholder='Phone number'
                                 value={phone.value}
                                 onChange={this.onPhoneChange}
-                            />
-                        </FormItem>
-
-                        <FormItem
-                            label="Your PESEL"
-                            hasFeedback
-                            validateStatus={pesel.validateStatus}
-                            help={pesel.errorMsg}
-                        >
-                            <Input
-                                placeholder='PESEL'
-                                maxLength={11}
-                                style={{ minWidth: 100 }}
-                                value={pesel.value}
-                                onChange={this.onPeselChange}
                             />
                         </FormItem>
                     </Form>

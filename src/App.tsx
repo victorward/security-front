@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 import { Layout, Menu } from 'antd';
-import Stepper from './form/Stepper';
+import Stepper from './stepper/Stepper';
 
 const { Header, Content, Footer } = Layout;
 
