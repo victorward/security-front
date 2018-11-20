@@ -1,18 +1,47 @@
 import { Col, Form, Input, Row } from 'antd';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import React, { Component } from 'react';
-import { isNumber, isNil } from 'lodash';
+import { isEmpty } from 'lodash';
 
 const FormItem = Form.Item;
 
 interface IFirstStepForm {
 }
 
-type FirstStepFormPage = IFirstStepForm & FormComponentProps;
+interface IFirstStepFormState {
+    pesel: any;
+    // pesel: {
+    //     value: number | undefined,
+    //     validateStatus?: any,
+    //     errorMsg?: string
+    // }
+}
 
-class FirstStepForm extends Component<FirstStepFormPage> {
-    constructor(props: FirstStepFormPage) {
+type FirstStepFormPageProps = IFirstStepForm & FormComponentProps;
+
+const validatePeselNumbers = (pesel: number): boolean => {
+    const dig = ('' + pesel).split('');
+    let control = (parseInt(dig[0], 10) + 3 * parseInt(dig[1], 10) + 7 * parseInt(dig[2], 10) + 9
+        * parseInt(dig[3], 10) + 1 * parseInt(dig[4], 10) + 3 * parseInt(dig[5], 10) + 7
+        * parseInt(dig[6], 10) + 9 * parseInt(dig[7], 10) + 1 * parseInt(dig[8], 10) + 3
+        * parseInt(dig[9], 10)) % 10;
+
+    if (control === 0)
+        control = 10;
+
+    control = 10 - control;
+
+    return parseInt(dig[10], 10) === control;
+};
+
+class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormState> {
+    constructor(props: FirstStepFormPageProps) {
         super(props);
+        this.state = {
+            pesel: {
+                value: undefined
+            }
+        };
     }
 
     handleSubmit = (e: any) => {
@@ -24,15 +53,58 @@ class FirstStepForm extends Component<FirstStepFormPage> {
         });
     };
 
+    onPeselChange = (event: any) => {
+        const reg = /^-?(0|[1-9][0-9]*)(\.[0-9]*)?$/;
+        const { value } = event.target;
+
+        if (isEmpty(value)) {
+            this.setState({
+                pesel: {
+                    errorMsg: 'PESEL is requiered',
+                    validateStatus: 'error',
+                    value
+                }
+            });
+            return;
+        }
+
+        if (reg.test(value) && ('' + value).length < 11) {
+            this.setState({
+                pesel: {
+                    errorMsg: 'PESEL is too short',
+                    validateStatus: 'error',
+                    value
+                }
+            });
+            return;
+        }
+
+        if (reg.test(value))
+            this.setState({
+                pesel: {
+                    ...this.validatePesel(value),
+                    value
+                }
+            });
+    };
+
     // https://gist.github.com/marekbryling/8889065
-    validatePesel = (rule: any, value: any, callback: any) => {
-        console.log(value);
-        callback();
+    validatePesel = (value: any) => {
+        if (validatePeselNumbers(value))
+            return {
+                validateStatus: 'success',
+                errorMsg: null
+            };
+
+        return {
+            validateStatus: 'error',
+            errorMsg: 'Please provide valid PESEL'
+        };
     };
 
     render() {
         const { getFieldDecorator } = this.props.form;
-
+        const { pesel } = this.state;
         return (
             <Row>
                 <Col span={14} offset={5}>
@@ -76,30 +148,15 @@ class FirstStepForm extends Component<FirstStepFormPage> {
                         <FormItem
                             label="Your PESEL"
                             hasFeedback
+                            validateStatus={pesel.validateStatus}
+                            help={pesel.errorMsg}
                         >
-                            {
-                                getFieldDecorator('pesel', {
-                                    rules: [
-                                        {
-                                            required: true,
-                                            message: 'Please input your PESEL'
-                                        },
-                                        {
-                                            validator: this.validatePesel
-                                        },
-                                        {
-                                            len: 10,
-                                            message: 'PESEL not has proper length'
-                                        },
-                                        {
-                                            validator: (rule, value, cb) => (isNumber(value) ? cb() : cb(true)),
-                                            message: 'Is not number'
-                                        }
-                                    ]
-                                })(
-                                    <Input placeholder='PESEL'/>
-                                )
-                            }
+                            <Input
+                                placeholder='PESEL'
+                                maxLength={11}
+                                value={pesel.value}
+                                onChange={this.onPeselChange}
+                            />
                         </FormItem>
                     </Form>
                 </Col>

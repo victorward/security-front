@@ -27,7 +27,7 @@ class Stepper extends Component<IStepperProps, IStepperState> {
     constructor(props: IStepperProps) {
         super(props);
         this.state = {
-            current: 0,
+            current: 0
         };
     }
 
