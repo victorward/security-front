@@ -4,12 +4,13 @@ const phoneUtil = require('google-libphonenumber').PhoneNumberUtil.getInstance()
 
 export const numbersRegex = /^[0-9]*$/;
 
+export const numbersAndLetterRegex = /^[a-zA-Z0-9]*$/;
+
 export const validateIdentityCard = (num: string) => {
     // Check length
     if (!num || num.length !== 9) {
         return false;
     }
-
     const upperNum = num.toUpperCase();
     const letterValues = [
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',

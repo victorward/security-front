@@ -1,9 +1,10 @@
-import { Col, Form, Input, Row, Select } from 'antd';
+import { Col, Form, Input, Row, Select, DatePicker, message } from 'antd';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import React, { Component } from 'react';
 import { isEmpty, map } from 'lodash';
 import { numbersRegex, validatePhoneNumber } from '../../helper/helper';
 import * as countriesPhonePrefixes from '../../helper/countries-phone-prefixes.json';
+import moment from 'moment';
 
 const FormItem = Form.Item;
 const Option = Select.Option;
@@ -12,9 +13,9 @@ interface IFirstStepForm {
 }
 
 interface IFormItem {
-    value: number | undefined,
-    validateStatus?: any,
-    errorMsg?: string
+    value: number | undefined;
+    validateStatus?: any;
+    errorMsg?: string;
 }
 
 interface IFirstStepFormState {
@@ -24,6 +25,10 @@ interface IFirstStepFormState {
 type FirstStepFormPageProps = IFirstStepForm & FormComponentProps;
 
 class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormState> {
+    static disabledDate(current: any) {
+        return current && current > moment().endOf('day');
+    }
+
     constructor(props: FirstStepFormPageProps) {
         super(props);
         this.state = {
@@ -96,15 +101,19 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                 optionFilterProp="children"
                 onChange={this.phonePrefixChange}
             >
-                {
-                    map(countriesPhonePrefixes.countries, (value) => {
-                        const name = `${value.name} (+${value.code})`;
+                {map(countriesPhonePrefixes.countries, value => {
+                    const name = `${value.name} (+${value.code})`;
 
-                        return (<Option key={value.iso2} value={`${value.iso2}`} title={name}>
+                    return (
+                        <Option
+                            key={value.iso2}
+                            value={`${value.iso2}`}
+                            title={name}
+                        >
                             {name}
-                        </Option>);
-                    })
-                }
+                        </Option>
+                    );
+                })}
             </Select>
         );
 
@@ -112,62 +121,45 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
             <Row>
                 <Col span={14} offset={5}>
                     <Form onSubmit={this.handleSubmit} layout="vertical">
-                        <FormItem
-                            label="Your first name"
-                            hasFeedback
-                        >
-                            {
-                                getFieldDecorator('first-name', {
-                                    rules: [
-                                        {
-                                            required: true,
-                                            message: 'Please input your first name'
-                                        }
-                                    ]
-                                })(
-                                    <Input placeholder='First name'/>
-                                )
-                            }
+                        <FormItem label="Your first name" hasFeedback>
+                            {getFieldDecorator('first-name', {
+                                rules: [
+                                    {
+                                        required: true,
+                                        message: 'Please input your first name'
+                                    }
+                                ]
+                            })(<Input placeholder="First name"/>)}
                         </FormItem>
 
-                        <FormItem
-                            label="and your second name"
-                            hasFeedback
-                        >
-                            {
-                                getFieldDecorator('second-name', {
-                                    rules: [
-                                        {
-                                            required: true,
-                                            message: 'Please input your second name'
-                                        }
-                                    ]
-                                })(
-                                    <Input placeholder='Second name'/>
-                                )
-                            }
+                        <FormItem label="and your second name" hasFeedback>
+                            {getFieldDecorator('second-name', {
+                                rules: [
+                                    {
+                                        required: true,
+                                        message: 'Please input your second name'
+                                    }
+                                ]
+                            })(<Input placeholder="Second name"/>)}
                         </FormItem>
 
                         <FormItem
                             label="Now please provide your email address"
                             hasFeedback
                         >
-                            {
-                                getFieldDecorator('email', {
-                                    rules: [
-                                        {
-                                            required: true,
-                                            message: 'Please input your email address'
-                                        },
-                                        {
-                                            type: 'email',
-                                            message: 'Is not valid email'
-                                        }
-                                    ]
-                                })(
-                                    <Input placeholder='email@gmail.com'/>
-                                )
-                            }
+                            {getFieldDecorator('email', {
+                                rules: [
+                                    {
+                                        required: true,
+                                        message:
+                                            'Please input your email address'
+                                    },
+                                    {
+                                        type: 'email',
+                                        message: 'Is not valid email'
+                                    }
+                                ]
+                            })(<Input placeholder="email@gmail.com"/>)}
                         </FormItem>
 
                         <FormItem
@@ -179,14 +171,39 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                         >
                             <Input
                                 addonBefore={phonePrefixSelector}
-                                placeholder='Phone number'
+                                placeholder="Phone number"
+                                style={{ minWidth: 100 }}
                                 value={phone.value}
                                 onChange={this.onPhoneChange}
                             />
                         </FormItem>
+
+                        <FormItem
+                            label="and last of this section - your birth date"
+                            hasFeedback
+                        >
+                            {
+                                getFieldDecorator('birth', {
+                                    rules: [
+                                        {
+                                            required: true,
+                                            type: 'object',
+                                            message: 'Please select your birth date'
+                                        }
+                                    ]
+                                })(
+                                    <DatePicker
+                                        showToday={false}
+                                        style={{ width: 280 }}
+                                        disabledDate={FirstStepForm.disabledDate}
+                                    />
+                                )
+                            }
+                        </FormItem>
                     </Form>
                 </Col>
-            </Row>);
+            </Row>
+        );
     }
 }
 

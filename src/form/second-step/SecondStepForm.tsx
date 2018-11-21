@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import { isEmpty } from 'lodash';
-import { numbersRegex, validatePeselNumbers } from '../../helper/helper';
+import { numbersAndLetterRegex, numbersRegex, validateIdentityCard, validatePeselNumbers } from '../../helper/helper';
 import { Col, Form, Input, Row, Select } from 'antd';
 
 const FormItem = Form.Item;
@@ -12,6 +12,7 @@ interface ISecondStepFormProps {
 
 interface SecondStepFormState {
     pesel: any;
+    identity: any;
 }
 
 type SecondStepFormProps = ISecondStepFormProps & FormComponentProps;
@@ -21,6 +22,9 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
         super(props);
         this.state = {
             pesel: {
+                value: undefined
+            },
+            identity: {
                 value: undefined
             }
         };
@@ -60,6 +64,43 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
             });
     };
 
+    onIdentityChange = (event: any) => {
+        const { value } = event.target;
+
+        if (isEmpty(value)) {
+            this.setState({
+                identity: {
+                    errorMsg: 'Identity card is required',
+                    validateStatus: 'error',
+                    value: value
+                }
+            });
+            return;
+        }
+
+        const upperValue = value.toUpperCase();
+        if (numbersAndLetterRegex.test(upperValue))
+            this.setState({
+                identity: {
+                    ...this.validateIdentity(upperValue),
+                    value: upperValue
+                }
+            });
+    };
+
+    validateIdentity = (value: string) => {
+      if (validateIdentityCard(value))
+          return {
+              validateStatus: 'success',
+              errorMsg: null
+          };
+
+        return {
+            validateStatus: 'error',
+            errorMsg: 'Please provide valid identity card'
+        };
+    };
+
     validatePesel = (value: any) => {
         if (validatePeselNumbers(value))
             return {
@@ -85,24 +126,51 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
 
     render() {
         const { getFieldDecorator } = this.props.form;
-        const { pesel } = this.state;
+        const { pesel, identity } = this.state;
         return (
             <Row>
                 <Col span={14} offset={5}>
                     <Form onSubmit={this.handleSubmit} layout="vertical">
                         <FormItem
-                            label="Your PESEL"
+                            label="We need verify your identity by PESEL"
                             hasFeedback
+                            required
                             validateStatus={pesel.validateStatus}
                             help={pesel.errorMsg}
                         >
                             <Input
                                 placeholder='PESEL'
                                 maxLength={11}
-                                style={{ minWidth: 100 }}
                                 value={pesel.value}
                                 onChange={this.onPeselChange}
                             />
+                        </FormItem>
+
+                        <FormItem
+                            label="and your identity document"
+                            hasFeedback
+                            required
+                            validateStatus={identity.validateStatus}
+                            help={identity.errorMsg}
+                        >
+                            <Input
+                                placeholder='Identity document'
+                                maxLength={9}
+                                style={{ minWidth: 100 }}
+                                value={identity.value}
+                                onChange={this.onIdentityChange}
+                            />
+                        </FormItem>
+
+                        <FormItem label="Now please provide password for access to your statement" hasFeedback>
+                            {getFieldDecorator('password', {
+                                rules: [
+                                    {
+                                        required: true,
+                                        message: 'Please add password to your statement'
+                                    }
+                                ]
+                            })(<Input placeholder="Password" type="password"/>)}
                         </FormItem>
                     </Form>
                 </Col>
