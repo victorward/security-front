@@ -1,4 +1,4 @@
-import { Col, Form, Input, Row, Select, DatePicker, message } from 'antd';
+import { Col, Form, Input, Row, Select, DatePicker } from 'antd';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import React, { Component } from 'react';
 import { isEmpty, map } from 'lodash';
@@ -194,7 +194,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                                 })(
                                     <DatePicker
                                         showToday={false}
-                                        style={{ width: 280 }}
+                                        style={{ width: '40%', minWidth: 180, maxWidth: 280 }}
                                         disabledDate={FirstStepForm.disabledDate}
                                     />
                                 )

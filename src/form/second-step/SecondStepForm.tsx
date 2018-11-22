@@ -2,9 +2,11 @@ import React, { Component } from 'react';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import { isEmpty } from 'lodash';
 import { numbersAndLetterRegex, numbersRegex, validateIdentityCard, validatePeselNumbers } from '../../helper/helper';
-import { Col, Form, Input, Row, Select } from 'antd';
+import { Col, Form, Input, Row, Progress, Tooltip } from 'antd';
+import zxcvbn from 'zxcvbn';
 
 const FormItem = Form.Item;
+const InputGroup = Input.Group;
 
 interface ISecondStepFormProps {
 
@@ -13,6 +15,7 @@ interface ISecondStepFormProps {
 interface SecondStepFormState {
     pesel: any;
     identity: any;
+    password: any;
 }
 
 type SecondStepFormProps = ISecondStepFormProps & FormComponentProps;
@@ -26,6 +29,14 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
             },
             identity: {
                 value: undefined
+            },
+            password: {
+                value: undefined,
+                percent: 0,
+                successPercent: 0,
+                status: undefined,
+                hint: '',
+                title: 'Password strength'
             }
         };
     }
@@ -88,12 +99,87 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
             });
     };
 
+    onPasswordChange = (event: any) => {
+        const { value } = event.target;
+        const strength = zxcvbn(value);
+        const percent = (strength.score + 1) * 20;
+        const hint = `For crack your password on our site hacker need ${
+            strength.crack_times_display.online_no_throttling_10_per_second
+        }`;
+        const base = {
+            value,
+            hint,
+            percent,
+            errorMsg: strength.feedback.suggestions
+        };
+
+        if (isEmpty(value)) {
+            this.setState({
+                password: {
+                    ...base,
+                    errorMsg: 'Password is required',
+                    validateStatus: 'error',
+                    status: 'exception',
+                    title: 'Password can\' be empty'
+                }
+            });
+            return;
+        }
+
+        if (percent < 30) {
+            this.setState({
+                password: {
+                    ...base,
+                    validateStatus: 'error',
+                    status: 'exception',
+                    title: 'Password is too simple'
+                }
+            });
+            return;
+        }
+
+        if (percent < 50) {
+            this.setState({
+                password: {
+                    ...base,
+                    validateStatus: 'warning',
+                    status: 'exception',
+                    title: 'Password is not good enough'
+                }
+            });
+            return;
+        }
+
+
+        if (percent < 70) {
+            this.setState({
+                password: {
+                    ...base,
+                    validateStatus: 'warning',
+                    status: 'active',
+                    title: 'Password is particular secure, add something more'
+                }
+            });
+            return;
+        }
+
+        this.setState({
+            password: {
+                ...this.state.password,
+                ...base,
+                validateStatus: 'success',
+                successPercent: percent,
+                title: percent === 100 ? 'Password is really secure' : 'Password is good but it can be better'
+            }
+        });
+    };
+
     validateIdentity = (value: string) => {
-      if (validateIdentityCard(value))
-          return {
-              validateStatus: 'success',
-              errorMsg: null
-          };
+        if (validateIdentityCard(value))
+            return {
+                validateStatus: 'success',
+                errorMsg: null
+            };
 
         return {
             validateStatus: 'error',
@@ -125,8 +211,7 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
 
 
     render() {
-        const { getFieldDecorator } = this.props.form;
-        const { pesel, identity } = this.state;
+        const { pesel, identity, password } = this.state;
         return (
             <Row>
                 <Col span={14} offset={5}>
@@ -162,15 +247,35 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
                             />
                         </FormItem>
 
-                        <FormItem label="Now please provide password for access to your statement" hasFeedback>
-                            {getFieldDecorator('password', {
-                                rules: [
-                                    {
-                                        required: true,
-                                        message: 'Please add password to your statement'
-                                    }
-                                ]
-                            })(<Input placeholder="Password" type="password"/>)}
+                        <FormItem
+                            label="Now please provide secure password for get access to your statement"
+                            required
+                            validateStatus={password.validateStatus}
+                            help={password.errorMsg}
+                            extra={password.hint}
+                        >
+                            <Row gutter={8}>
+                                <Col span={18}>
+                                    <Input
+                                        placeholder="Password"
+                                        type="password"
+                                        value={password.value}
+                                        onChange={this.onPasswordChange}
+                                    />
+                                </Col>
+                                <Col span={5}>
+                                    <Tooltip title={password.title}>
+                                        <Progress
+                                            percent={password.percent}
+                                            successPercent={password.successPercent}
+                                            status={password.status}
+                                            strokeColor={password.validateStatus === 'warning' ? '#faad14' : ''}
+                                            size="small"
+                                            default="small"
+                                        />
+                                    </Tooltip>
+                                </Col>
+                            </Row>
                         </FormItem>
                     </Form>
                 </Col>

@@ -3,6 +3,8 @@ import { Steps, Button, message, Row, Col } from 'antd';
 import './Stepper.css';
 import FirstStepForm from '../form/first-step/FirstStepForm';
 import SecondStepForm from '../form/second-step/SecondStepForm';
+import ThirdStepFormPageProps from '../form/third-step/ThirdStepForm';
+import LastStep from '../form/last-step/LastStep';
 
 const Step = Steps.Step;
 
@@ -15,11 +17,11 @@ const steps = [
         content: <SecondStepForm/>
     }, {
         title: 'Write statement',
-        content: 'Write statement'
+        content: <ThirdStepFormPageProps/>
     },
     {
         title: 'Finishing',
-        content: 'Finishing'
+        content: <LastStep/>
     }
 ];
 
@@ -66,24 +68,25 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                     </Col>
                 </Row>
                 <Row>
-                    <Col>
+                    <Col style={{ textAlign: 'right' }}>
                         <div className="steps-action">
-                            {
-                                current < steps.length - 1
-                                && <Button type="primary" onClick={() => this.next()}>Next</Button>
-                            }
-                            {
-                                current === steps.length - 1
-                                && <Button type="primary"
-                                           onClick={() => message.success('Processing complete!')}>Done</Button>
-                            }
                             {
                                 current > 0
                                 && (
-                                    <Button style={{ marginLeft: 8 }} onClick={() => this.prev()}>
+                                    <Button onClick={() => this.prev()}>
                                         Previous
                                     </Button>
                                 )
+                            }
+                            {
+                                current < steps.length - 1
+                                && <Button style={{ marginLeft: 8 }} type="primary"
+                                           onClick={() => this.next()}>Next</Button>
+                            }
+                            {
+                                current === steps.length - 1
+                                && <Button style={{ marginLeft: 8 }} type="primary"
+                                           onClick={() => message.success('Processing complete!')}>Done</Button>
                             }
                         </div>
                     </Col>
