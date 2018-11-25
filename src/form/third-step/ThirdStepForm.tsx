@@ -1,15 +1,17 @@
 import React, { Component } from 'react';
 import { Col, Form, Input, Row } from 'antd';
 import { FormComponentProps } from 'antd/lib/form';
+import { isEmpty } from 'lodash';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 
 interface IThirdStepForm {
+    changeForm: (form: object) => void;
 }
 
 interface IThirdStepFormState {
-    text: any;
+    statement: any;
 }
 
 type ThirdStepFormPageProps = IThirdStepForm & FormComponentProps;
@@ -18,37 +20,60 @@ class ThirdStepForm extends Component<ThirdStepFormPageProps, IThirdStepFormStat
     constructor(props: ThirdStepFormPageProps) {
         super(props);
         this.state = {
-            text: {
+            statement: {
                 value: undefined
             }
         };
     }
 
-    handleSubmit = (e: any) => {
-        e.preventDefault();
-        this.props.form.validateFields((err, values) => {
-            if (!err) {
-                console.log('Received values of form: ', values);
-            }
+    onStatementChange = (event: any) => {
+        const { value } = event.target;
+        const isValid = this.validateStatement(value);
+
+        this.props.changeForm({
+            statement: isValid
         });
+
+        this.setState({
+            statement: isValid
+        });
+
+    };
+
+    validateStatement = (value: any) => {
+        if (isEmpty(value))
+            return {
+                errorMsg: 'Please write your statement. You already do so much steps!',
+                validateStatus: 'error',
+                value
+            };
+
+        return {
+            validateStatus: 'success',
+            errorMsg: null,
+            value
+        };
     };
 
     render() {
-        const { getFieldDecorator } = this.props.form;
+        const { statement } = this.state;
 
         return (
             <Row>
                 <Col span={14} offset={5}>
-                    <Form onSubmit={this.handleSubmit} layout="vertical">
-                        <FormItem label="Now write your statement" hasFeedback>
-                            {getFieldDecorator('statement', {
-                                rules: [
-                                    {
-                                        required: true,
-                                        message: 'Please write your statement. You already do so much steps!'
-                                    }
-                                ]
-                            })(<TextArea placeholder="Statement" rows={13}/>)}
+                    <Form layout="vertical">
+                        <FormItem
+                            label="Now write your statement"
+                            hasFeedback
+                            validateStatus={statement.validateStatus}
+                            help={statement.errorMsg}
+                        >
+                          <TextArea
+                              value={statement.value}
+                              onChange={this.onStatementChange}
+                              placeholder="Statement"
+                              rows={13}
+                          />
                         </FormItem>
                     </Form>
                 </Col>

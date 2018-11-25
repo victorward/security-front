@@ -8,35 +8,22 @@ import LastStep from '../form/last-step/LastStep';
 
 const Step = Steps.Step;
 
-const steps = [
-    {
-        title: 'Base information',
-        content: <FirstStepForm/>
-    }, {
-        title: 'Verification data',
-        content: <SecondStepForm/>
-    }, {
-        title: 'Write statement',
-        content: <ThirdStepFormPageProps/>
-    },
-    {
-        title: 'Finishing',
-        content: <LastStep/>
-    }
-];
-
 interface IStepperProps {
 }
 
 interface IStepperState {
     current: number;
+    wholeForm: object;
 }
 
 class Stepper extends Component<IStepperProps, IStepperState> {
+    form: any;
     constructor(props: IStepperProps) {
         super(props);
         this.state = {
-            current: 0
+            current: 0,
+            wholeForm: {
+            }
         };
     }
 
@@ -50,8 +37,39 @@ class Stepper extends Component<IStepperProps, IStepperState> {
         this.setState({ current });
     }
 
+    changeForm = (value: any) => {
+        console.log('changeFrom', value);
+        this.setState(
+            {
+                ...this.state,
+                wholeForm: {
+                    ...this.state.wholeForm,
+                    ...value
+                }
+            }
+        );
+    };
+
     render() {
         const { current } = this.state;
+
+        const steps = [
+            {
+                title: 'Base information',
+                content: <FirstStepForm changeForm={this.changeForm}/>
+            }, {
+                title: 'Verification data',
+                content: <SecondStepForm changeForm={this.changeForm}/>
+            }, {
+                title: 'Write statement',
+                content: <ThirdStepFormPageProps changeForm={this.changeForm}/>
+            },
+            {
+                title: 'Finishing',
+                content: <LastStep changeForm={this.changeForm}/>
+            }
+        ];
+
 
         return (
             <div className="stepper">
@@ -86,7 +104,7 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                             {
                                 current === steps.length - 1
                                 && <Button style={{ marginLeft: 8 }} type="primary"
-                                           onClick={() => message.success('Processing complete!')}>Done</Button>
+                                           onClick={() => message.success('Processing complete!')}>Sent</Button>
                             }
                         </div>
                     </Col>

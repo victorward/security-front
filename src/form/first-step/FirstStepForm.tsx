@@ -2,7 +2,7 @@ import { Col, Form, Input, Row, Select, DatePicker } from 'antd';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import React, { Component } from 'react';
 import { isEmpty, map } from 'lodash';
-import { numbersRegex, validatePhoneNumber } from '../../helper/helper';
+import { emailRegex, numbersRegex, validatePhoneNumber } from '../../helper/helper';
 import * as countriesPhonePrefixes from '../../helper/countries-phone-prefixes.json';
 import moment from 'moment';
 
@@ -10,6 +10,7 @@ const FormItem = Form.Item;
 const Option = Select.Option;
 
 interface IFirstStepForm {
+    changeForm: (form: object) => void;
 }
 
 interface IFormItem {
@@ -20,6 +21,10 @@ interface IFormItem {
 
 interface IFirstStepFormState {
     phone: any;
+    firstName: any;
+    secondName: any;
+    email: any;
+    date: any;
 }
 
 type FirstStepFormPageProps = IFirstStepForm & FormComponentProps;
@@ -35,61 +40,178 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
             phone: {
                 value: undefined,
                 prefix: 'PL'
+            },
+            firstName: {
+                value: undefined
+            },
+            secondName: {
+                value: undefined
+            },
+            email: {
+                value: undefined
+            },
+            date: {
+                value: undefined,
+                momentValue: undefined
             }
         };
     }
 
-    handleSubmit = (e: any) => {
-        e.preventDefault();
-        this.props.form.validateFields((err, values) => {
-            if (!err) {
-                console.log('Received values of form: ', values);
-            }
-        });
-    };
-
     onPhoneChange = (event: any) => {
         const { value } = event.target;
-
-        if (isEmpty(value)) {
-            this.setState({
-                phone: {
-                    ...this.state.phone,
-                    errorMsg: 'Phone number is required',
-                    validateStatus: 'error',
-                    value
-                }
-            });
+        if (!numbersRegex.test(value))
             return;
-        }
 
-        if (numbersRegex.test(value))
-            this.setState({
-                phone: {
-                    ...this.state.phone,
-                    ...this.validatePhone(value, this.state.phone.prefix),
-                    value
-                }
-            });
+        const isValid = this.validatePhone(value);
+
+        this.props.changeForm({
+            phone: isValid
+        });
+        this.setState({
+            phone: isValid
+        });
+
     };
 
-    validatePhone = (value: number, prefix: string) => {
-        return validatePhoneNumber(value, prefix);
+    validatePhone = (value: number) => {
+        if (isEmpty(value))
+            return {
+                ...this.state.phone,
+                errorMsg: 'Phone number is required',
+                validateStatus: 'error',
+                value
+            };
+
+        return {
+            ...this.state.phone,
+            ...validatePhoneNumber(value, this.state.phone.prefix),
+            value
+        };
     };
 
     phonePrefixChange = (value: any) => {
+        const isValid = {
+            ...this.state.phone,
+            ...validatePhoneNumber(this.state.phone.value, value),
+            prefix: value
+        };
+
         this.setState({
-            phone: {
-                ...this.state.phone,
-                ...this.validatePhone(this.state.phone.value, value),
-                prefix: value
+            phone: isValid
+        });
+
+        this.props.changeForm({
+            phone: isValid
+        });
+    };
+
+    onFirstNameChange = (event: any) => {
+        const { value } = event.target;
+        const isValid = this.validateFirstName(value);
+
+        this.props.changeForm({
+            firstName: isValid
+        });
+
+        this.setState({
+            firstName: isValid
+        });
+
+    };
+
+    validateFirstName = (value: any) => {
+        if (isEmpty(value))
+            return {
+                errorMsg: 'First name is required',
+                validateStatus: 'error',
+                value
+            };
+
+        return {
+            validateStatus: 'success',
+            errorMsg: null,
+            value
+        };
+    };
+
+
+    onSecondNameChange = (event: any) => {
+        const { value } = event.target;
+        const isValid = this.validateSecondName(value);
+
+        this.props.changeForm({
+            secondName: isValid
+        });
+
+        this.setState({
+            secondName: isValid
+        });
+    };
+
+    validateSecondName = (value: any) => {
+        if (isEmpty(value))
+            return {
+                errorMsg: 'Second name is required',
+                validateStatus: 'error',
+                value
+            };
+
+        return {
+            validateStatus: 'success',
+            errorMsg: null,
+            value
+        };
+    };
+
+    onEmailChange = (event: any) => {
+        const { value } = event.target;
+
+        const isValid = this.validateEmail(value);
+
+        this.props.changeForm({
+            email: isValid
+        });
+
+        this.setState({
+            email: isValid
+        });
+    };
+
+    validateEmail = (value: any) => {
+        if (isEmpty(value))
+            return {
+                errorMsg: 'Email is required',
+                validateStatus: 'error',
+                value
+            };
+
+        if (emailRegex.test(value))
+            return {
+                validateStatus: 'success',
+                errorMsg: null,
+                value
+            };
+
+        return {
+            validateStatus: 'error',
+            errorMsg: 'Is not valid email',
+            value
+        };
+    };
+
+    onDateChange = (value: any) => {
+        this.props.changeForm({
+            date: {
+                value: value.format('YYYY-MM-DD'),
+                errorMsg: null,
+                momentValue: value
             }
         });
     };
 
     render() {
         const { getFieldDecorator } = this.props.form;
-        const { phone } = this.state;
+        const { phone, firstName, secondName, email } = this.state;
 
         const phonePrefixSelector = getFieldDecorator('phone-prefix', {
             initialValue: 'PL'
@@ -120,46 +242,46 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
         return (
             <Row>
                 <Col span={14} offset={5}>
-                    <Form onSubmit={this.handleSubmit} layout="vertical">
-                        <FormItem label="Your first name" hasFeedback>
-                            {getFieldDecorator('first-name', {
-                                rules: [
-                                    {
-                                        required: true,
-                                        message: 'Please input your first name'
-                                    }
-                                ]
-                            })(<Input placeholder="First name"/>)}
+                    <Form
+                        layout="vertical"
+                    >
+                        <FormItem
+                            label="Your first name"
+                            hasFeedback
+                            validateStatus={firstName.validateStatus}
+                            help={firstName.errorMsg}
+                        >
+                            <Input
+                                placeholder="First name"
+                                value={firstName.value}
+                                onChange={this.onFirstNameChange}
+                            />
                         </FormItem>
 
-                        <FormItem label="and your second name" hasFeedback>
-                            {getFieldDecorator('second-name', {
-                                rules: [
-                                    {
-                                        required: true,
-                                        message: 'Please input your second name'
-                                    }
-                                ]
-                            })(<Input placeholder="Second name"/>)}
+                        <FormItem
+                            label="and your second name"
+                            hasFeedback
+                            validateStatus={secondName.validateStatus}
+                            help={secondName.errorMsg}
+                        >
+                            <Input
+                                placeholder="Second name"
+                                value={secondName.value}
+                                onChange={this.onSecondNameChange}
+                            />
                         </FormItem>
 
                         <FormItem
                             label="Now please provide your email address"
                             hasFeedback
+                            validateStatus={email.validateStatus}
+                            help={email.errorMsg}
                         >
-                            {getFieldDecorator('email', {
-                                rules: [
-                                    {
-                                        required: true,
-                                        message:
-                                            'Please input your email address'
-                                    },
-                                    {
-                                        type: 'email',
-                                        message: 'Is not valid email'
-                                    }
-                                ]
-                            })(<Input placeholder="email@gmail.com"/>)}
+                            <Input
+                                placeholder="email@gmail.com"
+                                value={email.value}
+                                onChange={this.onEmailChange}
+                            />
                         </FormItem>
 
                         <FormItem
@@ -194,8 +316,10 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                                 })(
                                     <DatePicker
                                         showToday={false}
+                                        defaultValue={this.state.date.momentValue}
                                         style={{ width: '40%', minWidth: 180, maxWidth: 280 }}
                                         disabledDate={FirstStepForm.disabledDate}
+                                        onChange={this.onDateChange}
                                     />
                                 )
                             }

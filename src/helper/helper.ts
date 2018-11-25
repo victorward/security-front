@@ -1,10 +1,14 @@
 import * as contriesPhonePrefixes from './countries-phone-prefixes.json';
+import zxcvbn from 'zxcvbn';
+import { isEmpty } from 'lodash';
 
 const phoneUtil = require('google-libphonenumber').PhoneNumberUtil.getInstance();
 
 export const numbersRegex = /^[0-9]*$/;
 
 export const numbersAndLetterRegex = /^[a-zA-Z0-9]*$/;
+
+export const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export const validateIdentityCard = (num: string) => {
     // Check length
@@ -71,10 +75,13 @@ export const validatePeselNumbers = (pesel: number): boolean => {
     return parseInt(dig[10], 10) === control;
 };
 
+export const getPhoneNumber = (value: number, prefix: string) => {
+    return '+' + contriesPhonePrefixes.countries[prefix].code + value;
+};
 
 export const validatePhoneNumber = (value: number, prefix: string) => {
     try {
-        const phoneNumber = '+' + contriesPhonePrefixes.countries[prefix].code + value;
+        const phoneNumber = getPhoneNumber(value, prefix);
         const number = phoneUtil.parseAndKeepRawInput(phoneNumber, prefix);
         const isValid = phoneUtil.isValidNumber(number);
         if (!isValid)
@@ -92,5 +99,62 @@ export const validatePhoneNumber = (value: number, prefix: string) => {
     return {
         validateStatus: 'success',
         errorMsg: null
+    };
+};
+
+export const validatePassword = (value: any, statePassword: any) => {
+    const strength = zxcvbn(value);
+    const percent = (strength.score + 1) * 20;
+    const hint = `For crack your password through internet good hacker need ${
+        strength.crack_times_display.online_no_throttling_10_per_second
+        }`;
+    const base = {
+        value,
+        hint,
+        percent,
+        errorMsg: strength.feedback.suggestions
+    };
+
+    if (isEmpty(value))
+        return {
+            ...base,
+            errorMsg: 'Password is required',
+            validateStatus: 'error',
+            status: 'exception',
+            title: 'Password can\' be empty'
+        };
+
+    if (percent < 30)
+        return {
+            ...base,
+            validateStatus: 'error',
+            status: 'exception',
+            title: 'Password is too simple'
+        };
+
+    if (percent < 50)
+        return {
+            ...base,
+            validateStatus: 'warning',
+            status: 'exception',
+            title: 'Password is not good enough'
+        };
+
+
+    if (percent < 70)
+        return {
+            ...base,
+            validateStatus: 'warning',
+            status: 'active',
+            title: 'Password is particular secure, add something more'
+        };
+
+
+    return {
+        ...statePassword,
+        ...base,
+        validateStatus: 'success',
+        successPercent: percent,
+        title: percent === 100 ? 'Password is really secure' : 'Password is good but it can be better'
     };
 };
