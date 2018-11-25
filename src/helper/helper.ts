@@ -1,6 +1,7 @@
 import * as contriesPhonePrefixes from './countries-phone-prefixes.json';
 import zxcvbn from 'zxcvbn';
-import { isEmpty } from 'lodash';
+import { isEmpty, get } from 'lodash';
+import { Moment } from 'moment';
 
 const phoneUtil = require('google-libphonenumber').PhoneNumberUtil.getInstance();
 
@@ -76,7 +77,7 @@ export const validatePeselNumbers = (pesel: number): boolean => {
 };
 
 export const getPhoneNumber = (value: number, prefix: string) => {
-    return '+' + contriesPhonePrefixes.countries[prefix].code + value;
+    return '+' + get(contriesPhonePrefixes.countries[prefix], 'code') + value;
 };
 
 export const validatePhoneNumber = (value: number, prefix: string) => {
@@ -157,4 +158,21 @@ export const validatePassword = (value: any, statePassword: any) => {
         successPercent: percent,
         title: percent === 100 ? 'Password is really secure' : 'Password is good but it can be better'
     };
+};
+
+export const isDateAndPeselCorrect = (pesel: any, date: Moment) => {
+    const expectedYear = date.year() % 100;
+    let expectedMonth = date.month() + 1;
+    console.log(expectedYear, expectedMonth);
+    if (date.year() < 1900)
+        expectedMonth += 80;
+    else if (date.year() > 2000)
+        expectedMonth += 20;
+
+    const expectedDay = date.date();
+    const doesYearMatch = pesel.substring(0, 2) === '' + expectedYear;
+    const doesMonthMatch = pesel.substring(2, 4) === '' + expectedMonth;
+    const doesDayMatch = pesel.substring(4, 6) === '' + expectedDay;
+
+    return doesDayMatch && doesMonthMatch && doesYearMatch;
 };

@@ -1,16 +1,18 @@
 import { Col, Form, Input, Row, Select, DatePicker } from 'antd';
 import { FormComponentProps } from 'antd/lib/form/Form';
 import React, { Component } from 'react';
-import { isEmpty, map } from 'lodash';
-import { emailRegex, numbersRegex, validatePhoneNumber } from '../../helper/helper';
+import { isEmpty, map, get } from 'lodash';
+import { emailRegex, isDateAndPeselCorrect, numbersRegex, validatePhoneNumber } from '../../helper/helper';
 import * as countriesPhonePrefixes from '../../helper/countries-phone-prefixes.json';
 import moment from 'moment';
+import * as EmailValidator from 'email-validator';
 
 const FormItem = Form.Item;
 const Option = Select.Option;
 
 interface IFirstStepForm {
     changeForm: (form: object) => void;
+    formState: any;
 }
 
 interface IFormItem {
@@ -25,6 +27,7 @@ interface IFirstStepFormState {
     secondName: any;
     email: any;
     date: any;
+    pesel: any;
 }
 
 type FirstStepFormPageProps = IFirstStepForm & FormComponentProps;
@@ -36,26 +39,33 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
 
     constructor(props: FirstStepFormPageProps) {
         super(props);
-        this.state = {
-            phone: {
-                value: undefined,
-                prefix: 'PL'
-            },
-            firstName: {
-                value: undefined
-            },
-            secondName: {
-                value: undefined
-            },
-            email: {
-                value: undefined
-            },
-            date: {
-                value: undefined,
-                momentValue: undefined
-            }
-        };
+        this.state = this.getValues(this.props);
     }
+
+    componentWillReceiveProps(nextProps: Readonly<FirstStepFormPageProps>, nextContext: any): void {
+        this.setState(this.getValues(nextProps));
+    }
+
+    getValues = (props: FirstStepFormPageProps) => ({
+        phone: {
+            ...get(props.formState, 'phone', { value: undefined, prefix: 'PL' })
+        },
+        firstName: {
+            ...get(props.formState, 'firstName', { value: undefined })
+        },
+        secondName: {
+            ...get(props.formState, 'secondName', { value: undefined })
+        },
+        email: {
+            ...get(props.formState, 'email', { value: undefined })
+        },
+        date: {
+            ...get(props.formState, 'date', { value: undefined, momentValue: undefined })
+        },
+        pesel: {
+            ...get(props.formState, 'pesel', { value: undefined })
+        }
+    });
 
     onPhoneChange = (event: any) => {
         const { value } = event.target;
@@ -67,10 +77,6 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
         this.props.changeForm({
             phone: isValid
         });
-        this.setState({
-            phone: isValid
-        });
-
     };
 
     validatePhone = (value: number) => {
@@ -96,10 +102,6 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
             prefix: value
         };
 
-        this.setState({
-            phone: isValid
-        });
-
         this.props.changeForm({
             phone: isValid
         });
@@ -112,11 +114,6 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
         this.props.changeForm({
             firstName: isValid
         });
-
-        this.setState({
-            firstName: isValid
-        });
-
     };
 
     validateFirstName = (value: any) => {
@@ -134,16 +131,11 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
         };
     };
 
-
     onSecondNameChange = (event: any) => {
         const { value } = event.target;
         const isValid = this.validateSecondName(value);
 
         this.props.changeForm({
-            secondName: isValid
-        });
-
-        this.setState({
             secondName: isValid
         });
     };
@@ -171,10 +163,6 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
         this.props.changeForm({
             email: isValid
         });
-
-        this.setState({
-            email: isValid
-        });
     };
 
     validateEmail = (value: any) => {
@@ -185,7 +173,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                 value
             };
 
-        if (emailRegex.test(value))
+        if (EmailValidator.validate(value))
             return {
                 validateStatus: 'success',
                 errorMsg: null,
@@ -200,21 +188,43 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
     };
 
     onDateChange = (value: any) => {
+        const isValid = this.validateDate(value);
         this.props.changeForm({
-            date: {
-                value: value.format('YYYY-MM-DD'),
-                errorMsg: null,
-                momentValue: value
-            }
+            date: isValid
         });
+    };
+
+    validateDate = (value: any) => {
+        if (isEmpty(value))
+            return {
+                errorMsg: 'Please select your birth date',
+                validateStatus: 'error',
+                momentValue: value,
+                value
+            };
+
+        if (!isDateAndPeselCorrect(this.state.pesel.value, value))
+            return {
+                errorMsg: 'Your date of birth is not matching your PESEL number.',
+                validateStatus: 'error',
+                momentValue: value,
+                value
+            };
+
+        return {
+            value: value.format('YYYY-MM-DD'),
+            errorMsg: null,
+            validateStatus: 'success',
+            momentValue: value
+        };
     };
 
     render() {
         const { getFieldDecorator } = this.props.form;
-        const { phone, firstName, secondName, email } = this.state;
+        const { phone, firstName, secondName, email, date } = this.state;
 
         const phonePrefixSelector = getFieldDecorator('phone-prefix', {
-            initialValue: 'PL'
+            initialValue: this.state.phone.prefix
         })(
             <Select
                 style={{ minWidth: 150 }}
@@ -303,26 +313,16 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                         <FormItem
                             label="and last of this section - your birth date"
                             hasFeedback
+                            validateStatus={date.validateStatus}
+                            help={date.errorMsg}
                         >
-                            {
-                                getFieldDecorator('birth', {
-                                    rules: [
-                                        {
-                                            required: true,
-                                            type: 'object',
-                                            message: 'Please select your birth date'
-                                        }
-                                    ]
-                                })(
-                                    <DatePicker
-                                        showToday={false}
-                                        defaultValue={this.state.date.momentValue}
-                                        style={{ width: '40%', minWidth: 180, maxWidth: 280 }}
-                                        disabledDate={FirstStepForm.disabledDate}
-                                        onChange={this.onDateChange}
-                                    />
-                                )
-                            }
+                            <DatePicker
+                                showToday={false}
+                                style={{ width: '40%', minWidth: 180, maxWidth: 280 }}
+                                disabledDate={FirstStepForm.disabledDate}
+                                value={date.momentValue}
+                                onChange={this.onDateChange}
+                            />
                         </FormItem>
                     </Form>
                 </Col>

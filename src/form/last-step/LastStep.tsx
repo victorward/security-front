@@ -2,11 +2,13 @@ import React, { Component } from 'react';
 import { Col, Divider, Form, Input, Progress, Row, Tooltip } from 'antd';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { validatePassword } from '../../helper/helper';
+import { get } from 'lodash';
 
 const FormItem = Form.Item;
 
 interface ILastStepProps {
     changeForm: (form: object) => void;
+    formState: any;
 }
 
 interface ILastStepState {
@@ -19,9 +21,20 @@ const TEST_SITE_KEY = '6LeTfHwUAAAAAPKrFKVzVhQbraUPwUZpGAixZFsa';
 class LastStep extends Component<ILastStepProps, ILastStepState> {
     constructor(props: ILastStepProps) {
         super(props);
-        this.state = {
-            captcha: undefined,
-            password: {
+        console.log(this.props.formState);
+        this.state = this.getValues(props);
+    }
+
+    componentWillReceiveProps(nextProps: Readonly<ILastStepProps>, nextContext: any): void {
+        this.setState(this.getValues(nextProps));
+    }
+
+    getValues = (props: ILastStepProps) => ({
+        captcha: get(props.formState, 'captcha', undefined),
+        password: get(
+            props.formState,
+            'password',
+            {
                 value: undefined,
                 percent: 0,
                 successPercent: 0,
@@ -29,24 +42,19 @@ class LastStep extends Component<ILastStepProps, ILastStepState> {
                 hint: '',
                 title: 'Password strength'
             }
-        };
-    }
+        )
+    });
 
     handleChange = (value: any) => {
         console.log('Captcha value:', value);
         const captcha = { captcha: value };
 
-        this.setState(captcha);
         this.props.changeForm(captcha);
     };
 
     onPasswordChange = (event: any) => {
         const { value } = event.target;
         const isValid = validatePassword(value, this.state.password);
-
-        this.setState({
-            password: isValid
-        });
 
         this.props.changeForm({
             password: isValid

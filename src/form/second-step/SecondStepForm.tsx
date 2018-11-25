@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { FormComponentProps } from 'antd/lib/form/Form';
-import { isEmpty } from 'lodash';
+import { isEmpty, get } from 'lodash';
 import { numbersAndLetterRegex, numbersRegex, validateIdentityCard, validatePeselNumbers } from '../../helper/helper';
 import { Col, Form, Input, Row } from 'antd';
 
@@ -8,6 +8,7 @@ const FormItem = Form.Item;
 
 interface ISecondStepFormProps {
     changeForm: (form: object) => void;
+    formState: any;
 }
 
 interface SecondStepFormState {
@@ -20,15 +21,21 @@ type SecondStepFormProps = ISecondStepFormProps & FormComponentProps;
 class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState> {
     constructor(props: SecondStepFormProps) {
         super(props);
-        this.state = {
-            pesel: {
-                value: undefined
-            },
-            identity: {
-                value: undefined
-            },
-        };
+        this.state = this.getValues(this.props);
     }
+
+    componentWillReceiveProps(nextProps: Readonly<SecondStepFormProps>, nextContext: any): void {
+        this.setState(this.getValues(nextProps));
+    }
+
+    getValues = (props: SecondStepFormProps) => ({
+        pesel: {
+            ...get(props.formState, 'pesel', { value: undefined })
+        },
+        identity: {
+            ...get(props.formState, 'identity', { value: undefined })
+        },
+    });
 
     onPeselChange = (event: any) => {
         const { value } = event.target;
@@ -41,9 +48,9 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
             pesel: isPeselValid
         });
 
-        this.setState({
-            pesel: isPeselValid
-        });
+        // this.setState({
+        //     pesel: isPeselValid
+        // });
     };
 
     validatePesel = (value: any) => {
@@ -75,9 +82,9 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
 
         const isValid = this.validateIdentity(upperValue);
 
-        this.setState({
-            identity: isValid
-        });
+        // this.setState({
+        //     identity: isValid
+        // });
 
         this.props.changeForm({
             identity: isValid

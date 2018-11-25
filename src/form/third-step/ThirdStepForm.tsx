@@ -1,13 +1,14 @@
 import React, { Component } from 'react';
 import { Col, Form, Input, Row } from 'antd';
 import { FormComponentProps } from 'antd/lib/form';
-import { isEmpty } from 'lodash';
+import { isEmpty, get } from 'lodash';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 
 interface IThirdStepForm {
     changeForm: (form: object) => void;
+    formState: any;
 }
 
 interface IThirdStepFormState {
@@ -19,12 +20,19 @@ type ThirdStepFormPageProps = IThirdStepForm & FormComponentProps;
 class ThirdStepForm extends Component<ThirdStepFormPageProps, IThirdStepFormState> {
     constructor(props: ThirdStepFormPageProps) {
         super(props);
-        this.state = {
-            statement: {
-                value: undefined
-            }
-        };
+        this.state = this.getValues(props);
     }
+
+    componentWillReceiveProps(nextProps: Readonly<ThirdStepFormPageProps>, nextContext: any): void {
+        this.setState(this.getValues(nextProps));
+    }
+
+    getValues = (props: ThirdStepFormPageProps) => ({
+            statement: {
+                ...get(props.formState, 'statement', { value: undefined })
+            }
+        });
+
 
     onStatementChange = (event: any) => {
         const { value } = event.target;
@@ -33,11 +41,6 @@ class ThirdStepForm extends Component<ThirdStepFormPageProps, IThirdStepFormStat
         this.props.changeForm({
             statement: isValid
         });
-
-        this.setState({
-            statement: isValid
-        });
-
     };
 
     validateStatement = (value: any) => {
