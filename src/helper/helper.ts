@@ -1,6 +1,6 @@
 import * as contriesPhonePrefixes from './countries-phone-prefixes.json';
 import zxcvbn from 'zxcvbn';
-import { isEmpty, get } from 'lodash';
+import { isEmpty, get, find } from 'lodash';
 import { Moment } from 'moment';
 
 const phoneUtil = require('google-libphonenumber').PhoneNumberUtil.getInstance();
@@ -157,6 +157,21 @@ export const validatePassword = (value: any, statePassword: any) => {
         validateStatus: 'success',
         successPercent: percent,
         title: percent === 100 ? 'Password is really secure' : 'Password is good but it can be better'
+    };
+};
+
+export const getNumberAndPrefix = (phoneNumber: any) => {
+    const number = phoneUtil.parseAndKeepRawInput(phoneNumber);
+    const countryCode = number.getCountryCode();
+    const nationalNumber = number.getNationalNumber();
+    const prefix = get(
+        find(contriesPhonePrefixes.countries, (entry: any) => entry.code === '' + countryCode)
+        , 'iso2'
+    );
+
+    return {
+        value: nationalNumber,
+        prefix
     };
 };
 

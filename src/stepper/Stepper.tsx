@@ -1,15 +1,17 @@
 import React, { Component } from 'react';
-import { Steps, Button, message, Row, Col } from 'antd';
+import { Button, Col, message, Row, Steps, Modal } from 'antd';
 import './Stepper.css';
 import FirstStepForm from '../form/first-step/FirstStepForm';
 import SecondStepForm from '../form/second-step/SecondStepForm';
 import ThirdStepFormPageProps from '../form/third-step/ThirdStepForm';
 import LastStep from '../form/last-step/LastStep';
 import axios from 'axios/index';
-import { getPhoneNumber } from '../helper/helper';
-import { get, isEmpty } from 'lodash';
+import { getNumberAndPrefix, getPhoneNumber } from '../helper/helper';
+import { get, isEmpty, isNil } from 'lodash';
+import moment from 'moment';
 
 const Step = Steps.Step;
+const confirm = Modal.confirm;
 
 interface IStepperProps {
 }
@@ -19,6 +21,7 @@ interface IStepperState {
     wholeForm: any;
     http: any;
     loading: boolean;
+    autoFilled: boolean;
 }
 
 class Stepper extends Component<IStepperProps, IStepperState> {
@@ -32,7 +35,8 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                 timeout: 5000,
                 headers: { 'Content-Type': 'application/json' }
             }),
-            loading: false
+            loading: false,
+            autoFilled: false
         };
     }
 
@@ -74,10 +78,64 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                 return this.validateStepOne();
             case 1:
                 return this.validateStepTwo();
+            case 2:
+                return this.validateStepThree();
             default:
                 return new Promise((resolve: any, reject: any) => resolve(true));
         }
     }
+
+    setSuggestion(suggestion: any) {
+        const obj = getNumberAndPrefix(suggestion.phoneNumber);
+        console.log(obj);
+        this.setState({
+            autoFilled: true
+        });
+        this.setFormState({
+            phone: {
+                ...this.state.wholeForm.phone,
+                ...getNumberAndPrefix(suggestion.phoneNumber),
+                validateStatus: 'success',
+            },
+            firstName: {
+                ...this.state.wholeForm.firstName,
+                value: suggestion.firstName,
+                validateStatus: 'success',
+            },
+            secondName: {
+                ...this.state.wholeForm.secondName,
+                value: suggestion.lastName,
+                validateStatus: 'success',
+            },
+            email: {
+                ...this.state.wholeForm.email,
+                value: suggestion.email,
+                validateStatus: 'success',
+            },
+            date: {
+                ...this.state.wholeForm.date,
+                value: suggestion.birthDate,
+                validateStatus: 'success',
+                momentValue: moment(suggestion.birthDate)
+            }
+        });
+    }
+
+    showConfirm = (suggestion: any, that: any) => {
+        confirm({
+            title: 'We noticed that you already was there',
+            content: 'Do you want to auto-fill base information about you?',
+            onOk() {
+                return new Promise((resolve, reject) => {
+                    that.setSuggestion(suggestion);
+                    resolve(true);
+                }).catch((error) => console.log('Oops error!', error));
+            },
+            onCancel() {
+            },
+            okText: 'Auto-fill'
+        });
+    };
 
     validateStepOne() {
         return new Promise((resolve: any, reject: any) => {
@@ -86,11 +144,41 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                 idNumber: get(this.state.wholeForm, 'identity.value')
             }).then((resp: any) => {
                 console.log(resp);
+                if (!isNil(resp.data.suggestion) && !this.state.autoFilled)
+                    this.showConfirm(resp.data.suggestion, this);
+
                 resolve(true);
             }).catch((err: any) => {
                 console.log(err.response);
+
+                if (err.response.data.pesel.status === 'ERROR')
+                    this.setFormState({
+                        pesel: {
+                            ...this.state.wholeForm.pesel,
+                            errorMsg: err.response.data.pesel.msg,
+                            validateStatus: 'error'
+                        }
+                    });
+
+                if (err.response.data.idNumber.status === 'ERROR')
+                    this.setFormState({
+                        identity: {
+                            ...this.state.wholeForm.identity,
+                            errorMsg: err.response.data.idNumber.msg,
+                            validateStatus: 'error'
+                        }
+                    });
                 resolve(false);
             });
+        });
+    }
+
+    setFormState(error: any) {
+        this.setState({
+            wholeForm: {
+                ...this.state.wholeForm,
+                ...error
+            }
         });
     }
 
@@ -101,14 +189,79 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                 firstName: get(this.state.wholeForm, 'firstName.value'),
                 lastName: get(this.state.wholeForm, 'secondName.value'),
                 email: get(this.state.wholeForm, 'email.value'),
-                birthDate: get(this.state.wholeForm, 'date.value')
+                birthDate: get(this.state.wholeForm, 'date.value'),
+                pesel: get(this.state.wholeForm, 'pesel.value')
             }).then((resp: any) => {
                 console.log(resp);
                 resolve(true);
             }).catch((err: any) => {
                 console.log(err.response);
+
+                if (err.response.data.phoneNumber.status === 'ERROR')
+                    this.setFormState({
+                        phone: {
+                            ...this.state.wholeForm.phone,
+                            errorMsg: err.response.data.phoneNumber.msg,
+                            validateStatus: 'error',
+                            prefix: get(this.state.wholeForm, 'phone.prefix') ? this.state.wholeForm.phone.prefix : 'PL'
+                        }
+                    });
+
+                if (err.response.data.firstName.status === 'ERROR')
+                    this.setFormState({
+                        firstName: {
+                            ...this.state.wholeForm.firstName,
+                            errorMsg: err.response.data.firstName.msg,
+                            validateStatus: 'error'
+                        }
+                    });
+
+                if (err.response.data.lastName.status === 'ERROR')
+                    this.setFormState({
+                        secondName: {
+                            ...this.state.wholeForm.secondName,
+                            errorMsg: err.response.data.lastName.msg,
+                            validateStatus: 'error'
+                        }
+                    });
+
+                if (err.response.data.email.status === 'ERROR')
+                    this.setFormState({
+                        email: {
+                            ...this.state.wholeForm.email,
+                            errorMsg: err.response.data.email.msg,
+                            validateStatus: 'error'
+                        }
+                    });
+
+                if (err.response.data.birthDate.status === 'ERROR')
+                    this.setFormState({
+                        date: {
+                            ...this.state.wholeForm.date,
+                            errorMsg: err.response.data.birthDate.msg,
+                            validateStatus: 'error'
+                        }
+                    });
+
                 resolve(false);
             });
+        });
+    }
+
+    validateStepThree() {
+        return new Promise((resolve: any, reject: any) => {
+            if (isEmpty(get(this.state.wholeForm, 'statement.value'))) {
+                this.setFormState({
+                    statement: {
+                        ...this.state.wholeForm.statement,
+                        errorMsg: 'Please write your statement. You already do so much steps!',
+                        validateStatus: 'error'
+                    }
+                });
+                resolve(false);
+            }
+
+            resolve(true);
         });
     }
 
@@ -129,6 +282,16 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                 resolve(true);
             }).catch((err: any) => {
                 console.log(err.response);
+
+                if (err.response.data.password.status === 'ERROR')
+                    this.setFormState({
+                        password: {
+                            ...this.state.wholeForm.password,
+                            errorMsg: err.response.data.password.msg,
+                            validateStatus: 'error'
+                        }
+                    });
+
                 resolve(false);
             });
         });
