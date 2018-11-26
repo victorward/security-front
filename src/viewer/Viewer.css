@@ -1,0 +1,13 @@
+.viewer {
+    margin-top: 90px;
+    margin-bottom: 100px;
+}
+
+.viewer-content {
+    margin-top: 16px;
+    border: 1px dashed #e9e9e9;
+    border-radius: 6px;
+    background-color: #fafafa;
+    min-height: 200px;
+    padding-top: 50px;
+}

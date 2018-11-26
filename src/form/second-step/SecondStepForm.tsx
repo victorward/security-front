@@ -78,10 +78,6 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
 
         const isValid = this.validateIdentity(upperValue);
 
-        // this.setState({
-        //     identity: isValid
-        // });
-
         this.props.changeForm({
             identity: isValid
         });
