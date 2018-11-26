@@ -47,10 +47,6 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
         this.props.changeForm({
             pesel: isPeselValid
         });
-
-        // this.setState({
-        //     pesel: isPeselValid
-        // });
     };
 
     validatePesel = (value: any) => {
@@ -167,8 +163,6 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
                                 onChange={this.onIdentityChange}
                             />
                         </FormItem>
-
-
                     </Form>
                 </Col>
             </Row>);

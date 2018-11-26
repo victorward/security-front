@@ -177,14 +177,18 @@ export const getNumberAndPrefix = (phoneNumber: any) => {
 
 export const isDateAndPeselCorrect = (pesel: any, date: Moment) => {
     const expectedYear = date.year() % 100;
-    let expectedMonth = date.month() + 1;
-    console.log(expectedYear, expectedMonth);
+    let expectedMonth: string | number  = date.month() + 1;
     if (date.year() < 1900)
         expectedMonth += 80;
     else if (date.year() > 2000)
         expectedMonth += 20;
 
-    const expectedDay = date.date();
+    let expectedDay: string | number = date.date();
+    if (expectedDay < 10)
+        expectedDay = '0' + expectedDay;
+    if (expectedMonth < 10)
+        expectedMonth = '0' + expectedMonth;
+    console.log(expectedYear, expectedMonth, expectedDay);
     const doesYearMatch = pesel.substring(0, 2) === '' + expectedYear;
     const doesMonthMatch = pesel.substring(2, 4) === '' + expectedMonth;
     const doesDayMatch = pesel.substring(4, 6) === '' + expectedDay;

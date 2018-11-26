@@ -12,6 +12,7 @@ import moment from 'moment';
 
 const Step = Steps.Step;
 const confirm = Modal.confirm;
+const success = Modal.success;
 
 interface IStepperProps {
 }
@@ -121,6 +122,14 @@ class Stepper extends Component<IStepperProps, IStepperState> {
         });
     }
 
+    clearForm = () => {
+      this.setState({
+          wholeForm: {},
+          current: 0,
+          autoFilled: false
+      });
+    };
+
     showConfirm = (suggestion: any, that: any) => {
         confirm({
             title: 'We noticed that you already was there',
@@ -134,6 +143,23 @@ class Stepper extends Component<IStepperProps, IStepperState> {
             onCancel() {
             },
             okText: 'Auto-fill'
+        });
+    };
+
+    askClearData = (that: any) => {
+        confirm({
+            title: 'Statement successfully sent',
+            content: 'Do you want to clear all information?',
+            iconType: 'check-circle',
+            onOk() {
+                return new Promise((resolve, reject) => {
+                    that.clearForm();
+                    resolve(true);
+                }).catch((error) => console.log('Oops error!', error));
+            },
+            onCancel() {
+            },
+            okText: 'Clear all data'
         });
     };
 
@@ -279,6 +305,7 @@ class Stepper extends Component<IStepperProps, IStepperState> {
                 password: get(this.state.wholeForm, 'password.value')
             }).then((resp: any) => {
                 console.log(resp);
+                this.askClearData(this);
                 resolve(true);
             }).catch((err: any) => {
                 console.log(err.response);
