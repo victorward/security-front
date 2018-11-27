@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
 import './Viewer.css';
-import { Button, Col, Form, Input, Row } from 'antd';
-import { isNil, isEmpty } from 'lodash';
+import { Button, Col, Divider, Form, Input, message, Modal, Row, Table } from 'antd';
+import { isNil, isEmpty, get } from 'lodash';
 import { numbersAndLetterRegex, numbersRegex, validateIdentityCard, validatePeselNumbers } from '../helper/helper';
 import axios from 'axios';
+import moment from 'moment';
 
 const FormItem = Form.Item;
 
@@ -18,7 +19,13 @@ interface IViewerState {
     idNumber?: any;
     http: any;
     authorized: boolean;
-    forms: { id: number, createTimeStamp: number }
+    loading: boolean;
+    isModalVisible: boolean;
+    isModalLoading: boolean;
+    currentRecord: any;
+    statementPassword: any;
+    statementInformation: any;
+    forms: { id: number, createTimeStamp: number }[];
 }
 
 class Viewer extends Component<IViewerProps, IViewerState> {
@@ -36,7 +43,12 @@ class Viewer extends Component<IViewerProps, IViewerState> {
                 baseURL: 'https://securitysystems.herokuapp.com/',
                 timeout: 5000,
                 headers: { 'Content-Type': 'application/json' }
-            })
+            }),
+            loading: false,
+            isModalLoading: false,
+            statementPassword: undefined,
+            statementInformation: undefined,
+            isModalVisible: false
         };
     }
 
@@ -135,6 +147,9 @@ class Viewer extends Component<IViewerProps, IViewerState> {
     };
 
     loginUser = () => {
+        this.setState({
+            loading: true
+        });
         this.state.http.get('forms', {
             params: {
                 pesel: this.state.pesel.value,
@@ -142,19 +157,91 @@ class Viewer extends Component<IViewerProps, IViewerState> {
             }
         }).then((resp: any) => {
             console.log(resp);
+            this.setState({
+                loading: false
+            });
             this.props.setUserData({
                 forms: resp.data,
                 authorized: true
             });
 
         }).catch((err: any) => {
+            this.setState({
+                loading: false
+            });
+            message.error('Some error occurred during loading data');
             console.log(err);
         });
     };
 
+    logout = () => {
+        this.props.clearUserData();
+    };
+
+    showInfoAboutRow = (record: any) => {
+        console.log(record);
+        this.setState({
+            isModalVisible: true,
+            currentRecord: record
+        });
+    };
+
+    loadStatement = () => {
+        if (isEmpty(this.state.statementPassword))
+            return;
+
+        this.state.http.get('formDetails', {
+            params: {
+                formId: this.state.currentRecord.id,
+                password: this.state.statementPassword
+            }
+        }).then((resp: any) => {
+            console.log(resp);
+            this.setState({
+                statementInformation: resp.data
+            });
+        }).catch((resp: any) => {
+            console.log(resp);
+            message.error('Wrong password');
+        });
+    };
+
+    changePassword = (event: any) => {
+        const { value } = event.target;
+        this.setState({
+            statementPassword: value
+        });
+    };
+
+    closeModal = () => {
+        this.setState({
+            isModalVisible: false,
+            currentRecord: undefined,
+            statementInformation: undefined
+        });
+    };
+
     render() {
-        const { pesel, idNumber, authorized } = this.state;
-        console.log(pesel, idNumber);
+        const { loading, pesel, idNumber, authorized, forms, isModalVisible } = this.state;
+
+        const columns = [{
+            title: 'Id',
+            dataIndex: 'id',
+            key: 'id'
+        }, {
+            title: 'Created',
+            dataIndex: 'createTimeStamp',
+            key: 'createTimeStamp',
+            render: (text: any, row: any, index: any) => (
+                <span>{moment(text).format('dddd, MMMM Do YYYY, h:mm:ss a')}</span>
+            )
+        }, {
+            title: 'Action',
+            key: 'action',
+            render: (text: any, record: any) => (
+                <Button onClick={() => this.showInfoAboutRow(record)}>Show</Button>
+            )
+        }];
 
         return (
             <div className="viewer">
@@ -222,10 +309,84 @@ class Viewer extends Component<IViewerProps, IViewerState> {
                     authorized &&
                     <Row>
                         <Col>
-                            <div className="viewer-content">List</div>
+                            <div className="viewer-content">
+                                <Row>
+                                    <Col offset={18} span={3}>
+                                        <Button icon="sync" onClick={this.loginUser}>Refresh</Button>
+                                    </Col>
+                                    <Col span={3}>
+                                        <Button icon="logout" onClick={this.logout}>Logout</Button>
+                                    </Col>
+                                </Row>
+                                <Row>
+                                    <Col>
+                                        <Table
+                                            dataSource={forms}
+                                            columns={columns}
+                                            rowKey={'id'}
+                                            loading={loading}
+                                        />
+                                    </Col>
+                                </Row>
+                            </div>
                         </Col>
                     </Row>
                 }
+                <Modal
+                    onOk={this.closeModal}
+                    onCancel={this.closeModal}
+                    okText={'Close'}
+                    title="Information about statement"
+                    visible={this.state.isModalVisible}
+                >
+                    {
+                        this.state.isModalVisible && (
+                            <>
+                                {
+                                    isNil(this.state.statementInformation) &&
+                                    <Row>
+                                        <Col span={21}>
+                                            <Input
+                                                autoFocus
+                                                required
+                                                type="password"
+                                                onPressEnter={this.loadStatement}
+                                                onChange={this.changePassword}
+                                                about={'Write password for this statement'}
+                                                placeholder={'Write password for this statement'}
+                                            />
+                                        </Col>
+                                        <Col span={3}>
+                                            <Button onClick={this.loadStatement}
+                                                    disabled={isEmpty(this.state.statementPassword)}>Show</Button>
+                                        </Col>
+                                    </Row>
+                                }
+                                {
+                                    !isNil(this.state.statementInformation) &&
+                                    (
+                                        <Row style={{ textAlign: 'center' }}>
+                                            <Divider>Statement</Divider>
+                                            <p>{get(this.state.statementInformation, 'application')}</p>
+                                            <Divider>Birth date</Divider>
+                                            <p>{get(this.state.statementInformation, 'birthDate')}</p>
+                                            <Divider>Email</Divider>
+                                            <p>{get(this.state.statementInformation, 'email')}</p>
+                                            <Divider>First name</Divider>
+                                            <p>{get(this.state.statementInformation, 'firstName')}</p>
+                                            <Divider>Last name</Divider>
+                                            <p>{get(this.state.statementInformation, 'lastName')}</p>
+                                            <Divider>Pesel</Divider>
+                                            <p>{get(this.state.statementInformation, 'pesel')}</p>
+                                            <Divider>Phone number</Divider>
+                                            <p>{get(this.state.statementInformation, 'phoneNumber')}</p>
+                                        </Row>
+                                    )
+                                }
+                            </>
+                        )
+                    }
+                </Modal>
             </div>
         );
     }

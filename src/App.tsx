@@ -54,8 +54,10 @@ class App extends Component<IAppProps, IAppState> {
         this.setState(
             {
                 userData: {
-                    idNumber: undefined,
-                    pesel: undefined,
+                    idNumber: {
+                    },
+                    pesel: {
+                    },
                     authorized: false
                 }
             }

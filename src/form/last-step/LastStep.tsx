@@ -84,6 +84,7 @@ class LastStep extends Component<ILastStepProps, ILastStepState> {
                                 <Row gutter={8}>
                                     <Col span={18}>
                                         <Input
+                                            autoFocus
                                             placeholder="Password"
                                             type="password"
                                             value={password.value}

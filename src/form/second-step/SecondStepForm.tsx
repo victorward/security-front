@@ -137,6 +137,7 @@ class SecondStepForm extends Component<SecondStepFormProps, SecondStepFormState>
                             help={pesel.errorMsg}
                         >
                             <Input
+                                autoFocus
                                 placeholder='PESEL'
                                 maxLength={11}
                                 value={pesel.value}

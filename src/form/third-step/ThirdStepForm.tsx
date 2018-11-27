@@ -72,6 +72,7 @@ class ThirdStepForm extends Component<ThirdStepFormPageProps, IThirdStepFormStat
                             help={statement.errorMsg}
                         >
                           <TextArea
+                              autoFocus
                               value={statement.value}
                               onChange={this.onStatementChange}
                               placeholder="Statement"

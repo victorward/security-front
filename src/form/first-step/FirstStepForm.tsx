@@ -262,6 +262,7 @@ class FirstStepForm extends Component<FirstStepFormPageProps, IFirstStepFormStat
                             help={firstName.errorMsg}
                         >
                             <Input
+                                autoFocus
                                 placeholder="First name"
                                 value={firstName.value}
                                 onChange={this.onFirstNameChange}
